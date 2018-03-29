@@ -2,9 +2,6 @@
   #?(:cljs (:require [goog.crypt :as crypt]
                      [cljs.reader])))
 
-(def *data-readers*
-  {'tuple identity})
-
 (defn make-state [bytes]
   (atom {:bytes bytes
          :result []}))
@@ -51,13 +48,7 @@
   (let [arr (new js/Uint8Array byte-array)
         buf (.-buffer arr)
         dv (new js/DataView buf)]
-    (.getUint16 dv 0))
-  #_(+
-     (* (aget byte-array (+ 1 starting-byte))
-        256)
-
-     (* (aget byte-array (+ 1 starting-byte))
-        1)))
+    (.getUint16 dv 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,17 +56,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn take-byte! [state]
-  (let [byte (first (:bytes @state))]
-    (swap! state
-           (fn [s] (update s :bytes next)))
-    byte))
-
 (defn take-bytes! [n state]
   (let [bytes (take n (:bytes @state))]
     (swap! state
            (fn [s] (update s :bytes (fn [b] (drop n b)))))
     bytes))
+
+(defn take-byte! [state]
+  (first (take-bytes! 1 state)))
 
 (defn add-to-result! [exp state]
   (swap! state
@@ -102,7 +90,7 @@
 
 (defmethod do-decode :SMALL_BIG [state]
   (let [length (take-byte! state)
-        sign (take-byte! state)
+        sign-byte (take-byte! state)
         digits (vec (take-bytes! length state))
         n (reduce (fn [acc val] (+ acc
                                    (* (get digits val)
@@ -110,32 +98,27 @@
                   0
                   (range length))]
 
-    (add-to-result! (if (= 1 sign) (- 0 n) n)
+    (add-to-result! (if (= 1 sign-byte) (- 0 n) n)
                     state)))
 
 (defmethod do-decode :LARGE_BIG [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        sign (take-byte! state)
+        sign-byte (take-byte! state)
         digits (vec (take-bytes! length state))
-        ]
+        n (reduce (fn [acc val]
+                    (let [value (+ acc
+                                   (* (get digits val)
+                                      (.pow js/Math 256 val)))]
+                      (if (= value js/Infinity)
+                        (reduced value)
+                        value)))
+                  0
+                  (range length))]
 
-    ;;(if (<= (count digits) 16)
-      (let [n (reduce (fn [acc val]
-                      (let [value (+ acc
-                                     (* (get digits val)
-                                        (.pow js/Math 256 val)))]
-                        (println value)
-                        (cond
-                          (> value (.-MAX_VALUE js/Number)) js/Infinity
-                          (< value (.-MIN_VALUE js/Number)) js/-Infinity
-                          :else value)))
-                    1.0
-                    (range length))]
-        (add-to-result! (if (= 1 sign) (- 0 n) n)
-                        state)
-        )
-      #_(add-to-result! (if (= 1 sign) js/-Infinity js/Infinity)
-                      state)))
+    (if (= n js/Infinity)
+      (add-to-result! (if (= 1 sign-byte) js/-Infinity n) state)
+      (add-to-result! (if (= 1 sign-byte) (- 0 n) n)
+                      state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +182,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod do-decode :NIL [state])
+(defmethod do-decode :NIL [state]
+  (add-to-result! [] state))
 
 (defmethod do-decode :STRING [state]
   (let [length (unsigned-int-from-2-bytes (apply array (take-bytes! 2 state)))
@@ -211,9 +195,30 @@
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
         elements (reduce (fn [acc val] (conj acc (:result (do-decode state))))
                          []
-                         (range length))]
+                         (range length))
+        tail (:result (do-decode state))]
 
-    (add-to-result! (vec elements) state)))
+    ;; proper list has [] as tail, improper has anything else
+    (add-to-result! (if (= [] tail)
+                      (vec elements)
+                      (conj (vec elements) tail))
+                    state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod do-decode :MAP [state]
+  (let [number-of-kv-pairs (->> state
+                                (take-bytes! 4)
+                                (apply array)
+                                signed-int-from-4-bytes)
+        elements (reduce (fn [acc val]
+                           (assoc acc
+                                  (:result (do-decode state))
+                                  (:result (do-decode state))))
+                         {}
+                         (range number-of-kv-pairs))]
+
+    (add-to-result! elements state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,12 +232,4 @@
   (let [state (make-state s)]
     (assert (= 131 (take-byte! state)))
     (do-decode state)
-    (:result @state))
-  #_(do-decode (apply array (drop 1 s))))
-
-
-(comment
-
-  (ns-unmap 'birdie.decode 'do-decode)
-
-  (decode (cljs.core/array 131 109 0 0 0 2 111 107)))
+    (:result @state)))
