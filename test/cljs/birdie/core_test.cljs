@@ -30,7 +30,9 @@
     (is (= -1000000000000 (c/decode (vector 131 110 5 1 0 16 165 212 232))))
     )
 
-  (testing "big bignums"
+  (testing "large bignums"
+    (is (= 1000000000000000000000000000000000000000000000 (c/decode fixtures/large-bignum)))
+    (is (= 1000000000000000000000000000000000000000000000 (c/decode fixtures/large-bignum)))
 
     )
 

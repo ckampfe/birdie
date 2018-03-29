@@ -113,7 +113,29 @@
     (add-to-result! (if (= 1 sign) (- 0 n) n)
                     state)))
 
-(defmethod do-decode :LARGE_BIG [state])
+(defmethod do-decode :LARGE_BIG [state]
+  (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
+        sign (take-byte! state)
+        digits (vec (take-bytes! length state))
+        ]
+
+    ;;(if (<= (count digits) 16)
+      (let [n (reduce (fn [acc val]
+                      (let [value (+ acc
+                                     (* (get digits val)
+                                        (.pow js/Math 256 val)))]
+                        (println value)
+                        (cond
+                          (> value (.-MAX_VALUE js/Number)) js/Infinity
+                          (< value (.-MIN_VALUE js/Number)) js/-Infinity
+                          :else value)))
+                    1.0
+                    (range length))]
+        (add-to-result! (if (= 1 sign) (- 0 n) n)
+                        state)
+        )
+      #_(add-to-result! (if (= 1 sign) js/-Infinity js/Infinity)
+                      state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
