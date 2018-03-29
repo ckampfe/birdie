@@ -1,0 +1,14 @@
+/target
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-history
+/.nrepl-port
+.hgignore
+.hg/
+.cljs_node_repl
+node_modules/
