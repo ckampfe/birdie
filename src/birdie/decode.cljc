@@ -1,18 +1,17 @@
 (ns birdie.decode
-  #?(:cljs (:require [goog.crypt :as crypt]
-                     [cljs.reader])))
+  #?(:cljs (:require [goog.crypt :as crypt])))
 
 (defn make-state [bytes]
   (atom {:bytes bytes
          :result []}))
 
 (def types
-  {70 :NEW_FLOAT
-   77 :BIT_BINARY
-   82 :ATOM_CACHE_REFERENCE_INDEX
-   97 :SMALL_INTEGER
-   98 :INTEGER
-   99 :FLOAT
+  {70  :NEW_FLOAT
+   77  :BIT_BINARY
+   82  :ATOM_CACHE_REFERENCE_INDEX
+   97  :SMALL_INTEGER
+   98  :INTEGER
+   99  :FLOAT
    100 :ATOM ;; deprecated
    101 :REFERENCE
    102 :PORT
@@ -166,17 +165,15 @@
 
 (defmethod do-decode :SMALL_TUPLE [state]
   (let [length (take-byte! state)
-        elements (reduce (fn [acc val] (conj acc (:result (do-decode state))))
-                         []
-                         (range length))]
+        elements (map (fn [_] (:result (do-decode state)))
+                      (range length))]
 
     (add-to-result! (vec elements) state)))
 
 (defmethod do-decode :LARGE_TUPLE [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        elements (reduce (fn [acc val] (conj acc (:result (do-decode state))))
-                         []
-                         (range length))]
+        elements (map (fn [_] (:result (do-decode state)))
+                      (range length))]
 
     (add-to-result! (vec elements) state)))
 
@@ -193,9 +190,8 @@
 
 (defmethod do-decode :LIST [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        elements (reduce (fn [acc val] (conj acc (:result (do-decode state))))
-                         []
-                         (range length))
+        elements (mapv (fn [_] (:result (do-decode state)))
+                       (range length))
         tail (:result (do-decode state))]
 
     ;; proper list has [] as tail, improper has anything else
