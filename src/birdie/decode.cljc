@@ -35,19 +35,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn signed-int-from-4-bytes [byte-array]
-  (let [arr (new js/Uint8Array byte-array)
-        buf (.-buffer arr)
-        dv (new js/DataView buf)]
-    (.getInt32 dv 0)))
+#?(:cljs (defn signed-int-from-4-bytes [byte-array]
+           (let [arr (new js/Uint8Array byte-array)
+                 buf (.-buffer arr)
+                 dv (new js/DataView buf)]
+             (.getInt32 dv 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn unsigned-int-from-2-bytes [byte-array]
-  (let [arr (new js/Uint8Array byte-array)
-        buf (.-buffer arr)
-        dv (new js/DataView buf)]
-    (.getUint16 dv 0)))
+#?(:cljs (defn unsigned-int-from-2-bytes [byte-array]
+           (let [arr (new js/Uint8Array byte-array)
+                 buf (.-buffer arr)
+                 dv (new js/DataView buf)]
+             (.getUint16 dv 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
