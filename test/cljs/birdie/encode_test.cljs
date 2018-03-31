@@ -33,8 +33,12 @@
     (is (= (keyword "😋") (c/decode (c/encode (keyword "😋"))))))
 
   (testing "keywords"
-    (let [big-keyword1 (keyword (reduce str (repeat 50000 "h")))]
-      (is (= big-keyword1 (c/decode (c/encode big-keyword1))))))
+    (let [big-keyword1 (keyword (reduce str (repeat 50000 "h")))
+          big-keyword-with-uft8 (keyword (reduce str (repeat 10000 "😋h")))
+          too-big-keyword (keyword (reduce str (repeat 80000 "h")))]
+      (is (= big-keyword1 (c/decode (c/encode big-keyword1))))
+      (is (= big-keyword-with-uft8 (c/decode (c/encode big-keyword-with-uft8))))
+      (is (thrown? js/Error (c/encode too-big-keyword)))))
 
   (testing "vectors")
   (testing "vectors as bytelists")
