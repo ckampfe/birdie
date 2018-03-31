@@ -6,11 +6,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn make-state [exp]
-  (atom {:exp exp
-         :result []}))
-
 (ns-unmap 'birdie.encode 'do-encode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(declare do-encode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,18 +84,43 @@
   (let [length-bytes (int-to-2-bytes length)]
     (cons 118 (concat length-bytes bytes))))
 
+(defn encode-seq [exp]
+  (let [elements (mapcat do-encode exp)
+        length (count exp)
+        length-bytes (int-to-4-bytes length)]
+
+    (cons 108 (concat length-bytes
+                      elements
+                      (vector 106)))))
+
+(defn encode-map [exp]
+  (let [length (count exp)
+        length-bytes (int-to-4-bytes length)
+        elements (mapcat (fn [[k v]]
+                           (concat (do-encode k)
+                                   (do-encode v)))
+                         exp)]
+
+    (cons 116 (concat length-bytes elements))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmulti do-encode (fn [exp] (type exp)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 #?(:cljs (defmethod do-encode js/String [exp]
            (encode-string exp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod do-encode js/Number [exp]
   (cond
     (is-float? exp)              (encode-new-float exp)
     (fits-in-unsigned-byte? exp) (encode-small-integer exp)
     (fits-in-4-bytes? exp)       (encode-integer exp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod do-encode cljs.core/Keyword [exp]
   (let [bytes (string-to-byte-vector (name exp))
@@ -106,9 +131,25 @@
       (< length 65536) (encode-atom-utf8 bytes length)
       :default (throw (js/Error "Atom exceeds maximum byte-length of 65535")))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod do-encode cljs.core/PersistentVector [exp] (encode-seq exp))
+(defmethod do-encode cljs.core/PersistentHashSet [exp] (encode-seq exp))
+(defmethod do-encode cljs.core/List [exp] (encode-seq (reverse exp)))
+(defmethod do-encode cljs.core/EmptyList [exp] (encode-seq []))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod do-encode cljs.core/PersistentHashMap [exp] (encode-map exp))
+(defmethod do-encode cljs.core/PersistentArrayMap [exp] (encode-map exp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmethod do-encode :default [exp]
   (println "DEFAULT")
   (throw (js/Error (str "No encoder found for " exp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn encode [exp]
   (cons 131 (do-encode exp)))

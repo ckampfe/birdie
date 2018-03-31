@@ -40,8 +40,35 @@
       (is (= big-keyword-with-uft8 (c/decode (c/encode big-keyword-with-uft8))))
       (is (thrown? js/Error (c/encode too-big-keyword)))))
 
-  (testing "vectors")
+  (testing "vectors"
+    (is (= [] (c/decode (c/encode []))))
+    (is (= [1 2 3] (c/decode (c/encode [1 2 3])))))
+
+  ;; bytelists are an optimization that cuts down on encoding overhead,
+  ;; encoding a bytelist may not be statically determinable,
+  ;; might require an option passed in, or similar
   (testing "vectors as bytelists")
-  (testing "maps")
+
+  (testing "sets"
+    (is (= #{} (into #{} (c/decode (c/encode #{})))))
+    (is (= #{1 2 3} (into #{} (c/decode (c/encode #{1 2 3}))))))
+
+  (testing "lists"
+    (is (= '() (into '() (c/decode (c/encode '())))))
+    (is (= '(1 2 3) (into '() (c/decode (c/encode '(1 2 3)))))))
+
+  (testing "maps"
+    (let [big-map (reduce (fn [acc [k v]]
+                            (assoc acc k v))
+                          (hash-map)
+                          (partition 2 (vec (range 1001))))]
+
+      ;; small maps are array maps
+      (is (= {} (c/decode (c/encode {}))))
+      (is (= {:a 1} (c/decode (c/encode {:a 1}))))
+
+      ;; big maps are hash maps
+      (is (= big-map (c/decode (c/encode big-map))))))
+
   (testing "complex structures"))
 
