@@ -68,11 +68,42 @@
                           (partition 2 (vec (range 1001))))]
 
       ;; small maps are array maps
-      (is (= {} (c/decode (c/encode {}))))
+      (is (= {} (c/decode (c/encode (array-map)))))
+      (is (= {:a 1} (c/decode (c/encode (array-map :a 1)))))
       (is (= {:a 1} (c/decode (c/encode {:a 1}))))
 
       ;; big maps are hash maps
+      (is (= {} (c/decode (c/encode (hash-map)))))
       (is (= big-map (c/decode (c/encode big-map))))))
 
-  (testing "complex structures"))
+  (testing "complex structures"
+    (is (= {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}
+           (c/decode (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}))))
+
+    (is (= [{} {} {} [{} {}] 1]
+           (c/decode (c/encode [{} {} {} [{} {}] 1])))))
+
+  (testing "encodes to various output types"
+    (is (= cljs.core/Cons
+           (type (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}))))
+
+    (is (= js/Array
+           (type (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}
+                           {:kind :array}))))
+
+    (is (= js/Uint8Array
+           (type (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}
+                           {:kind :typed-array})))))
+
+  (testing "js interface works"
+    (is (= cljs.core/Cons
+           (type (c/encode-js (clj->js [1 2 3])))))
+
+    (is (= js/Array
+           (type (c/encode-js (clj->js [1 2 3])
+                              (clj->js {:kind :array})))))
+
+    (is (= js/Uint8Array
+           (type (c/encode-js (clj->js [1 2 3])
+                              (clj->js {:kind :typed-array})))))))
 
