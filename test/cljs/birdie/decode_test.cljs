@@ -63,6 +63,10 @@
   (testing "empty list aka NIL"
     (is (= [] (c/decode (vector 131 106)))))
 
+  (testing "booleans"
+    (is (= true (c/decode (vector 131 100 0 4 116 114 117 101))))
+    (is (= false (c/decode (vector 131 100 0 5 102 97 108 115 101)))))
+
   (testing "lists"
     (is (= [1 :a "hello"] (c/decode (vector 131 108 0 0 0 3 97 1 100 0 1 97 109 0 0 0 5 104 101 108 108 111 106))))
 

@@ -147,8 +147,11 @@
 (defmethod do-decode :SMALL_ATOM [state])
 
 (defmethod do-decode :ATOM [state]
-  (add-to-result! (common-atom state)
-                  state))
+  (let [kw (common-atom state)]
+    (cond
+      (= :true kw) (add-to-result! true state)
+      (= :false kw) (add-to-result! false state)
+      :default (add-to-result! kw state))))
 
 (defmethod do-decode :SMALL_ATOM_UTF8 [state]
   (let [length (take-byte! state)]

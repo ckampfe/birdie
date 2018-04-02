@@ -40,6 +40,10 @@
       (is (= big-keyword-with-uft8 (c/decode (c/encode big-keyword-with-uft8))))
       (is (thrown? js/Error (c/encode too-big-keyword)))))
 
+  (testing "booleans"
+    (is (= true (c/decode (c/encode true))))
+    (is (= false (c/decode (c/encode false)))))
+
   (testing "vectors"
     (is (= [] (c/decode (c/encode []))))
     (is (= [1 2 3] (c/decode (c/encode [1 2 3])))))

@@ -6,23 +6,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(ns-unmap 'birdie.encode 'do-encode)
+#_(ns-unmap 'birdie.encode 'encode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(declare do-encode)
+;; (declare encode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn int-to-2-bytes [n]
-  (let [buf (new js/ArrayBuffer 2)
-        byte-view (new js/Uint8Array buf)
-        int-view (new js/Int16Array buf)]
+  #?(:cljs (let [buf (new js/ArrayBuffer 2)
+                 byte-view (new js/Uint8Array buf)
+                 int-view (new js/Int16Array buf)]
 
-    (aset int-view 0 n)
+             (aset int-view 0 n)
 
-    (mapv (fn [i] (aget byte-view i))
-          (rseq (vec (range 2))))))
+             (mapv (fn [i] (aget byte-view i))
+                   (rseq (vec (range 2)))))))
 
 (defn int-to-4-bytes [n]
   (let [buf (new js/ArrayBuffer 4)
@@ -84,8 +84,14 @@
   (let [length-bytes (int-to-2-bytes length)]
     (cons 118 (concat length-bytes bytes))))
 
+(defn encode-atom [exp]
+  (let [bytes (string-to-byte-vector (str exp))
+        length (count bytes)
+        length-bytes (int-to-2-bytes length)]
+    (cons 100 (concat length-bytes bytes))))
+
 (defn encode-seq [exp]
-  (let [elements (mapcat do-encode exp)
+  (let [elements (mapcat encode exp)
         length (count exp)
         length-bytes (int-to-4-bytes length)]
 
@@ -97,24 +103,24 @@
   (let [length (count exp)
         length-bytes (int-to-4-bytes length)
         elements (mapcat (fn [[k v]]
-                           (concat (do-encode k)
-                                   (do-encode v)))
+                           (concat (encode k)
+                                   (encode v)))
                          exp)]
 
     (cons 116 (concat length-bytes elements))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmulti do-encode (fn [exp] (type exp)))
+(defmulti encode (fn [exp] (type exp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#?(:cljs (defmethod do-encode js/String [exp]
+#?(:cljs (defmethod encode js/String [exp]
            (encode-string exp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod do-encode js/Number [exp]
+(defmethod encode js/Number [exp]
   (cond
     (is-float? exp)              (encode-new-float exp)
     (fits-in-unsigned-byte? exp) (encode-small-integer exp)
@@ -122,7 +128,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod do-encode cljs.core/Keyword [exp]
+(defmethod encode cljs.core/Keyword [exp]
   (let [bytes (string-to-byte-vector (name exp))
         length (count bytes)]
 
@@ -133,23 +139,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod do-encode cljs.core/PersistentVector [exp] (encode-seq exp))
-(defmethod do-encode cljs.core/PersistentHashSet [exp] (encode-seq exp))
-(defmethod do-encode cljs.core/List [exp] (encode-seq (reverse exp)))
-(defmethod do-encode cljs.core/EmptyList [exp] (encode-seq []))
+(defmethod encode js/Boolean [exp]
+  (encode-atom exp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod do-encode cljs.core/PersistentHashMap [exp] (encode-map exp))
-(defmethod do-encode cljs.core/PersistentArrayMap [exp] (encode-map exp))
+(defmethod encode cljs.core/PersistentVector [exp] (encode-seq exp))
+(defmethod encode cljs.core/PersistentHashSet [exp] (encode-seq exp))
+(defmethod encode cljs.core/List [exp] (encode-seq (reverse exp)))
+(defmethod encode cljs.core/EmptyList [exp] (encode-seq []))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod do-encode :default [exp]
+(defmethod encode cljs.core/PersistentHashMap [exp] (encode-map exp))
+(defmethod encode cljs.core/PersistentArrayMap [exp] (encode-map exp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod encode :default [exp]
   (println "DEFAULT")
   (throw (js/Error (str "No encoder found for " exp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn encode [exp]
-  (cons 131 (do-encode exp)))
+#_(defn encode [exp]
+  (cons 131 (encode exp)))
