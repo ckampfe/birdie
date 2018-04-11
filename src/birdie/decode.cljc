@@ -193,14 +193,20 @@
 
 (defmethod do-decode :LIST [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        elements (mapv (fn [_] (.-result (do-decode state)))
+        elements (loop [i 0
+                        c (transient [])]
+                   (if (< i length)
+                     (recur (inc i)
+                            (conj! c (.-result (do-decode state))))
+                     (persistent! c)))
+                 #_(mapv (fn [_] (.-result (do-decode state)))
                        (range length))
         tail (:result (do-decode state))]
 
     ;; proper list has [] as tail, improper has anything else
     (add-to-result! (if (= [] tail)
                       (vec elements)
-                      (conj (vec elements) tail))
+                      (conj elements tail))
                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
