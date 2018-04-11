@@ -1,21 +1,22 @@
 (ns birdie.decode
   #?(:cljs (:require [goog.crypt :as crypt])))
 
+(defrecord State [bytes result])
+
 (defn make-state [bytes]
-  (atom {:bytes bytes
-         :result []}))
+  (State. bytes []))
 
 (def types
   {70  :NEW_FLOAT
-   77  :BIT_BINARY
-   82  :ATOM_CACHE_REFERENCE_INDEX
+   ;; 77  :BIT_BINARY
+   ;; 82  :ATOM_CACHE_REFERENCE_INDEX
    97  :SMALL_INTEGER
    98  :INTEGER
    99  :FLOAT
    100 :ATOM ;; deprecated
-   101 :REFERENCE
-   102 :PORT
-   103 :PID
+   ;; 101 :REFERENCE
+   ;; 102 :PORT
+   ;; 103 :PID
    104 :SMALL_TUPLE
    105 :LARGE_TUPLE
    106 :NIL
@@ -24,12 +25,12 @@
    109 :BINARY
    110 :SMALL_BIG
    111 :LARGE_BIG
-   112 :NEW_FUN
-   113 :EXPORT ;; MFA
-   114 :NEW_REFERENCE
+   ;; 112 :NEW_FUN
+   ;; 113 :EXPORT ;; MFA
+   ;; 114 :NEW_REFERENCE
    115 :SMALL_ATOM ;; deprecated
    116 :MAP
-   117 :FUN
+   ;; 117 :FUN
    118 :ATOM_UTF8
    119 :SMALL_ATOM_UTF8})
 
@@ -56,17 +57,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn take-bytes! [n state]
-  (let [bytes (take n (:bytes @state))]
-    (swap! state
-           (fn [s] (update s :bytes (fn [b] (drop n b)))))
+  (let [[bytes remaining] (split-at n (.-bytes state))]
+    (set! (.-bytes state) remaining)
     bytes))
 
 (defn take-byte! [state]
   (first (take-bytes! 1 state)))
 
 (defn add-to-result! [exp state]
-  (swap! state
-         (fn [s] (assoc s :result exp))))
+  (set! (.-result state) exp)
+  state)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -168,14 +168,14 @@
 
 (defmethod do-decode :SMALL_TUPLE [state]
   (let [length (take-byte! state)
-        elements (map (fn [_] (:result (do-decode state)))
+        elements (map (fn [_] (.-result (do-decode state)))
                       (range length))]
 
     (add-to-result! (vec elements) state)))
 
 (defmethod do-decode :LARGE_TUPLE [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        elements (map (fn [_] (:result (do-decode state)))
+        elements (map (fn [_] (.-result (do-decode state)))
                       (range length))]
 
     (add-to-result! (vec elements) state)))
@@ -193,7 +193,7 @@
 
 (defmethod do-decode :LIST [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        elements (mapv (fn [_] (:result (do-decode state)))
+        elements (mapv (fn [_] (.-result (do-decode state)))
                        (range length))
         tail (:result (do-decode state))]
 
@@ -212,8 +212,8 @@
                                 signed-int-from-4-bytes)
         elements (reduce (fn [acc val]
                            (assoc acc
-                                  (:result (do-decode state))
-                                  (:result (do-decode state))))
+                                  (.-result (do-decode state))
+                                  (.-result (do-decode state))))
                          {}
                          (range number-of-kv-pairs))]
 
@@ -231,4 +231,4 @@
   (let [state (make-state s)]
     (assert (= 131 (take-byte! state)))
     (do-decode state)
-    (:result @state)))
+    (.-result state)))
