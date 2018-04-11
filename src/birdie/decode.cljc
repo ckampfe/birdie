@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(ns-unmap 'birdie.decode 'do-decode)
+#_(ns-unmap 'birdie.decode 'do-decode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,15 +198,15 @@
                    (if (< i length)
                      (recur (inc i)
                             (conj! c (.-result (do-decode state))))
-                     (persistent! c)))
+                     c))
                  #_(mapv (fn [_] (.-result (do-decode state)))
                        (range length))
         tail (:result (do-decode state))]
 
     ;; proper list has [] as tail, improper has anything else
     (add-to-result! (if (= [] tail)
-                      (vec elements)
-                      (conj elements tail))
+                      (persistent! elements)
+                      (persistent! (conj! elements tail)))
                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
