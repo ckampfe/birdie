@@ -168,17 +168,25 @@
 
 (defmethod do-decode :SMALL_TUPLE [state]
   (let [length (take-byte! state)
-        elements (map (fn [_] (.-result (do-decode state)))
-                      (range length))]
+        elements (loop [i 0
+                        c (transient [])]
+                   (if (< i length)
+                     (recur (inc i)
+                            (conj! c (.-result (do-decode state))))
+                     (persistent! c)))]
 
-    (add-to-result! (vec elements) state)))
+    (add-to-result! elements state)))
 
 (defmethod do-decode :LARGE_TUPLE [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
-        elements (map (fn [_] (.-result (do-decode state)))
-                      (range length))]
+        elements (loop [i 0
+                        c (transient [])]
+                   (if (< i length)
+                     (recur (inc i)
+                            (conj! c (.-result (do-decode state))))
+                     (persistent! c)))]
 
-    (add-to-result! (vec elements) state)))
+    (add-to-result! elements state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,8 +207,6 @@
                      (recur (inc i)
                             (conj! c (.-result (do-decode state))))
                      c))
-                 #_(mapv (fn [_] (.-result (do-decode state)))
-                       (range length))
         tail (:result (do-decode state))]
 
     ;; proper list has [] as tail, improper has anything else
@@ -216,12 +222,14 @@
                                 (take-bytes! 4)
                                 (apply array)
                                 signed-int-from-4-bytes)
-        elements (reduce (fn [acc val]
-                           (assoc acc
-                                  (.-result (do-decode state))
-                                  (.-result (do-decode state))))
-                         {}
-                         (range number-of-kv-pairs))]
+        elements (loop [i 0
+                        c (transient {})]
+                   (if (< i number-of-kv-pairs)
+                     (recur (inc i)
+                            (assoc! c
+                                    (.-result (do-decode state))
+                                    (.-result (do-decode state))))
+                     (persistent! c)))]
 
     (add-to-result! elements state)))
 
