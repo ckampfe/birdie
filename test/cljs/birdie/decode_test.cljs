@@ -1,7 +1,8 @@
 (ns birdie.decode-test
   (:require [cljs.test :refer-macros [deftest is testing run-tests]]
             [birdie.core :as c]
-            [birdie.fixtures :as fixtures]))
+            [birdie.fixtures :as fixtures]
+            [birdie.decode :as d]))
 
 (enable-console-print!)
 
@@ -41,14 +42,14 @@
     (is (= :ok (c/decode (vector  131 100 0 2 111 107)))))
 
   (testing "small atom utf8"
-    (is (= (keyword (apply str "😋" (repeat 52 "a")))
-           (c/decode (apply vector (concat (vector 131 118 1 2 240 159 152 139)
-                                           (repeat 52 97)))))))
+    (let [utf8-kw (apply str "😋" (repeat 52 "a"))]
+      (is (= utf8-kw
+             (c/decode (c/encode utf8-kw))))))
 
   (testing "atom utf8"
-    (is (= (keyword (apply str "😋" (repeat 252 "a")))
-           (c/decode (apply vector (concat (vector 131 118 1 2 240 159 152 139)
-                                           (repeat 252 97)))))))
+    (let [utf8-kw (keyword (apply str "😋" (repeat 52 "a")))]
+      (is (= utf8-kw
+             (c/decode (c/encode utf8-kw))))))
 
   (testing "small tuples"
     (is (= [7] (c/decode (vector 131 104 1 97 7))))
