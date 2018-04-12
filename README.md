@@ -31,6 +31,7 @@ $ ./bench.sh
 
 ### Decoding
 
+```
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>
 running benchmark suite ETF decode benchmarks
 suite contains 5 benchmarks
@@ -90,10 +91,12 @@ benchmarking JSON large map with 100 iterations and 5 warmup runs
 [data data], (bench-fn data), 100 runs, 2093 msecs
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+```
 
 
 ### Encoding
 
+```
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>
 running benchmark suite ETF encode benchmarks
 suite contains 5 benchmarks
@@ -153,6 +156,7 @@ benchmarking JSON large map with 100 iterations and 5 warmup runs
 [data data], (bench-fn data), 100 runs, 2288 msecs
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+```
 
 
 ## License
