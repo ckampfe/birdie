@@ -36,34 +36,34 @@ $ ./bench.sh
 running benchmark suite ETF decode benchmarks
 suite contains 6 benchmarks
 benchmarking ETF small homogenous vector with 10000 iterations and 5 warmup runs
-[data data], (bench-fn data), 10000 runs, 97 msecs
-[data data], (bench-fn data), 10000 runs, 96 msecs
-[data data], (bench-fn data), 10000 runs, 93 msecs
+[data data], (bench-fn data), 10000 runs, 47 msecs
+[data data], (bench-fn data), 10000 runs, 50 msecs
+[data data], (bench-fn data), 10000 runs, 53 msecs
 
 benchmarking ETF small homogenous string vector with 10000 iterations and 5 warmup runs
-[data data], (bench-fn data), 10000 runs, 284 msecs
-[data data], (bench-fn data), 10000 runs, 269 msecs
-[data data], (bench-fn data), 10000 runs, 271 msecs
+[data data], (bench-fn data), 10000 runs, 158 msecs
+[data data], (bench-fn data), 10000 runs, 160 msecs
+[data data], (bench-fn data), 10000 runs, 169 msecs
 
 benchmarking ETF large homogenous vector with 100 iterations and 5 warmup runs
-[data data], (bench-fn data), 100 runs, 2951 msecs
-[data data], (bench-fn data), 100 runs, 2990 msecs
-[data data], (bench-fn data), 100 runs, 2956 msecs
+[data data], (bench-fn data), 100 runs, 1867 msecs
+[data data], (bench-fn data), 100 runs, 1821 msecs
+[data data], (bench-fn data), 100 runs, 1864 msecs
 
 benchmarking ETF large heterogenous vector with 100 iterations and 5 warmup runs
-[data data], (bench-fn data), 100 runs, 4088 msecs
-[data data], (bench-fn data), 100 runs, 4143 msecs
-[data data], (bench-fn data), 100 runs, 4184 msecs
+[data data], (bench-fn data), 100 runs, 2375 msecs
+[data data], (bench-fn data), 100 runs, 2386 msecs
+[data data], (bench-fn data), 100 runs, 2426 msecs
 
 benchmarking ETF small map with 10000 iterations and 5 warmup runs
-[data data], (bench-fn data), 10000 runs, 254 msecs
-[data data], (bench-fn data), 10000 runs, 268 msecs
-[data data], (bench-fn data), 10000 runs, 289 msecs
+[data data], (bench-fn data), 10000 runs, 147 msecs
+[data data], (bench-fn data), 10000 runs, 133 msecs
+[data data], (bench-fn data), 10000 runs, 139 msecs
 
 benchmarking ETF large map with 100 iterations and 5 warmup runs
-[data data], (bench-fn data), 100 runs, 3310 msecs
-[data data], (bench-fn data), 100 runs, 3292 msecs
-[data data], (bench-fn data), 100 runs, 3359 msecs
+[data data], (bench-fn data), 100 runs, 1814 msecs
+[data data], (bench-fn data), 100 runs, 1795 msecs
+[data data], (bench-fn data), 100 runs, 1747 msecs
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -71,34 +71,34 @@ benchmarking ETF large map with 100 iterations and 5 warmup runs
 running benchmark suite JSON decode benchmarks
 suite contains 6 benchmarks
 benchmarking JSON small homogenous vector with 10000 iterations and 5 warmup runs
-[data data], (bench-fn data), 10000 runs, 198 msecs
-[data data], (bench-fn data), 10000 runs, 208 msecs
-[data data], (bench-fn data), 10000 runs, 272 msecs
+[data data], (bench-fn data), 10000 runs, 215 msecs
+[data data], (bench-fn data), 10000 runs, 213 msecs
+[data data], (bench-fn data), 10000 runs, 205 msecs
 
 benchmarking JSON small homogenous string vector with 10000 iterations and 5 warmup runs
-[data data], (bench-fn data), 10000 runs, 57 msecs
-[data data], (bench-fn data), 10000 runs, 59 msecs
-[data data], (bench-fn data), 10000 runs, 51 msecs
+[data data], (bench-fn data), 10000 runs, 62 msecs
+[data data], (bench-fn data), 10000 runs, 60 msecs
+[data data], (bench-fn data), 10000 runs, 60 msecs
 
 benchmarking JSON large homogenous vector with 100 iterations and 5 warmup runs
-[data data], (bench-fn data), 100 runs, 3652 msecs
-[data data], (bench-fn data), 100 runs, 3665 msecs
-[data data], (bench-fn data), 100 runs, 3657 msecs
+[data data], (bench-fn data), 100 runs, 3721 msecs
+[data data], (bench-fn data), 100 runs, 3687 msecs
+[data data], (bench-fn data), 100 runs, 3771 msecs
 
 benchmarking JSON large heterogenous vector with 100 iterations and 5 warmup runs
-[data data], (bench-fn data), 100 runs, 2948 msecs
-[data data], (bench-fn data), 100 runs, 2912 msecs
-[data data], (bench-fn data), 100 runs, 2879 msecs
+[data data], (bench-fn data), 100 runs, 2907 msecs
+[data data], (bench-fn data), 100 runs, 2978 msecs
+[data data], (bench-fn data), 100 runs, 2909 msecs
 
 benchmarking JSON small map with 10000 iterations and 5 warmup runs
-[data data], (bench-fn data), 10000 runs, 172 msecs
-[data data], (bench-fn data), 10000 runs, 232 msecs
-[data data], (bench-fn data), 10000 runs, 158 msecs
+[data data], (bench-fn data), 10000 runs, 176 msecs
+[data data], (bench-fn data), 10000 runs, 165 msecs
+[data data], (bench-fn data), 10000 runs, 221 msecs
 
 benchmarking JSON large map with 100 iterations and 5 warmup runs
-[data data], (bench-fn data), 100 runs, 2242 msecs
-[data data], (bench-fn data), 100 runs, 2324 msecs
-[data data], (bench-fn data), 100 runs, 2236 msecs
+[data data], (bench-fn data), 100 runs, 2220 msecs
+[data data], (bench-fn data), 100 runs, 2243 msecs
+[data data], (bench-fn data), 100 runs, 2234 msecs
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ```
