@@ -6,11 +6,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#_(ns-unmap 'birdie.encode 'encode)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(declare encode)
+(defprotocol Encodable
+  (do-encode [this]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,11 +68,14 @@
 
 (defn encode-string [exp]
   (let [bytes (string-to-byte-vector exp)
-        length (count bytes)
-        size-bytes (int-to-4-bytes length)]
+        size-bytes (int-to-4-bytes (count bytes))]
 
-    (concat (cons 109 size-bytes)
-            bytes)))
+    (persistent! (apply conj!
+                        (->> size-bytes
+                             (cons 109)
+                             (into [])
+                             transient)
+                        bytes))))
 
 (defn encode-small-atom-utf8 [bytes length]
   (cons 119 (cons length bytes)))
@@ -86,41 +86,42 @@
 
 (defn encode-atom [exp]
   (let [bytes (string-to-byte-vector (str exp))
-        length (count bytes)
-        length-bytes (int-to-2-bytes length)]
+        length-bytes (->> bytes
+                          count
+                          int-to-2-bytes)]
     (cons 100 (concat length-bytes bytes))))
 
 (defn encode-seq [exp]
-  (let [elements (mapcat encode exp)
-        length (count exp)
-        length-bytes (int-to-4-bytes length)]
+  (let [elements (->> exp
+                      (reduce (fn [acc val]
+                                (apply conj! acc (do-encode val)))
+                              (transient []))
+                      persistent!)
+        length-bytes (->> exp
+                          count
+                          int-to-4-bytes)]
 
     (cons 108 (concat length-bytes
                       elements
                       (vector 106)))))
 
 (defn encode-map [exp]
-  (let [length (count exp)
-        length-bytes (int-to-4-bytes length)
-        elements (mapcat (fn [[k v]]
-                           (concat (encode k)
-                                   (encode v)))
-                         exp)]
+  (let [length-bytes (->> exp
+                          count
+                          int-to-4-bytes)
+        elements (->> exp
+                      (reduce (fn [acc [k v]]
+                                (apply conj!
+                                       (apply conj! acc (do-encode k))
+                                       (do-encode v)))
+                              (transient []))
+                      persistent!)]
 
     (cons 116 (concat length-bytes elements))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmulti encode (fn [exp] (type exp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#?(:cljs (defmethod encode js/String [exp]
-           (encode-string exp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmethod encode js/Number [exp]
+(defn encode-number [exp]
   (cond
     (is-float? exp)              (encode-new-float exp)
     (fits-in-unsigned-byte? exp) (encode-small-integer exp)
@@ -128,7 +129,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod encode cljs.core/Keyword [exp]
+(defn encode-keyword [exp]
   (let [bytes (string-to-byte-vector (name exp))
         length (count bytes)]
 
@@ -139,28 +140,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod encode js/Boolean [exp]
-  (encode-atom exp))
+(extend-protocol Encodable
+  cljs.core/Keyword
+  (do-encode [this] (encode-keyword this))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  string
+  (do-encode [this] (encode-string this))
 
-(defmethod encode cljs.core/PersistentVector [exp] (encode-seq exp))
-(defmethod encode cljs.core/PersistentHashSet [exp] (encode-seq exp))
-(defmethod encode cljs.core/List [exp] (encode-seq (reverse exp)))
-(defmethod encode cljs.core/EmptyList [exp] (encode-seq []))
+  number
+  (do-encode [this] (encode-number this))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  boolean
+  (do-encode [this] (encode-atom this))
 
-(defmethod encode cljs.core/PersistentHashMap [exp] (encode-map exp))
-(defmethod encode cljs.core/PersistentArrayMap [exp] (encode-map exp))
+  cljs.core/PersistentVector
+  (do-encode [this] (encode-seq this))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  cljs.core/List
+  (do-encode [this] (encode-seq (reverse this)))
 
-(defmethod encode :default [exp]
-  (println "DEFAULT")
-  (throw (js/Error (str "No encoder found for " exp))))
+  cljs.core/EmptyList
+  (do-encode [this] (encode-seq []))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  cljs.core/PersistentHashSet
+  (do-encode [this] (encode-seq this))
 
-#_(defn encode [exp]
-  (cons 131 (encode exp)))
+  cljs.core/PersistentHashMap
+  (do-encode [this] (encode-map this))
+
+  cljs.core/PersistentArrayMap
+  (do-encode [this] (encode-map this))
+
+  boolean
+  (do-encode [this] (encode-atom this))
+
+  default
+  (do-encode [this] (throw js/Error "No encoder found for" this)))
+
+(defn encode [exp]
+  (cons 131 (do-encode exp)))
