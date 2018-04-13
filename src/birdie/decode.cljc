@@ -56,7 +56,7 @@
 (defn decode-small-big [state]
   (let [length (take-byte! state)
         sign-byte (take-byte! state)
-        digits (vec (take-bytes! length state))
+        digits (take-bytes! length state)
         n (reduce (fn [acc val] (+ acc
                                    (* (get digits val)
                                       (.pow js/Math 256 val))))
@@ -69,7 +69,7 @@
 (defn decode-large-big [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
         sign-byte (take-byte! state)
-        digits (vec (take-bytes! length state))
+        digits (take-bytes! length state)
         n (reduce (fn [acc val]
                     (let [value (+ acc
                                    (* (get digits val)
@@ -161,7 +161,7 @@
   (let [length (unsigned-int-from-2-bytes (apply array (take-bytes! 2 state)))
         elements (take-bytes! length state)]
 
-    (add-to-result! (vec elements) state)))
+    (add-to-result! elements state)))
 
 (defn decode-list [state]
   (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
