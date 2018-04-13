@@ -22,19 +22,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn take-bytes! [n state]
-  (loop [i 0
-         bytes (transient [])
-         pos (.-position state)]
-    (if (< i n)
-      (recur (inc i)
-             (conj! bytes (nth (.-bytes state) pos))
-             (inc pos))
-      (do
-        (set! (.-position state) pos)
-        (persistent! bytes)))))
+  (let [bytes (make-array n)]
+    (loop [i 0
+           pos (.-position state)]
+      (if (< i n)
+        (do
+          (aset bytes i (nth (.-bytes state) pos))
+          (recur (inc i)
+                 (inc pos)))
+        (do
+          (set! (.-position state) pos)
+          bytes)))))
 
 (defn take-byte! [state]
-  (first (take-bytes! 1 state)))
+  (aget (take-bytes! 1 state)
+        0))
 
 (defn add-to-result! [exp state]
   (set! (.-result state) exp)
@@ -48,7 +50,7 @@
       (add-to-result! state)))
 
 (defn decode-integer [state]
-  (add-to-result! (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
+  (add-to-result! (signed-int-from-4-bytes (take-bytes! 4 state))
                   state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -67,7 +69,7 @@
                     state)))
 
 (defn decode-large-big [state]
-  (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
+  (let [length (signed-int-from-4-bytes (take-bytes! 4 state))
         sign-byte (take-byte! state)
         digits (take-bytes! length state)
         n (reduce (fn [acc val]
@@ -88,14 +90,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn decode-binary [state]
-  (let [length #?(:cljs (signed-int-from-4-bytes (apply array (take-bytes! 4 state))))]
-    (add-to-result! (crypt/utf8ByteArrayToString (apply array (take-bytes! length state)))
+  (let [length #?(:cljs (signed-int-from-4-bytes (take-bytes! 4 state)))]
+    (add-to-result! (crypt/utf8ByteArrayToString (take-bytes! length state))
                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn decode-new-float [state]
-  (let [arr (new js/Uint8Array (apply array (take-bytes! 8 state)))
+  (let [arr (new js/Uint8Array (take-bytes! 8 state))
         buf (.-buffer arr)
         dv (new js/DataView buf)]
     (add-to-result! (.getFloat64 dv 0)
@@ -104,9 +106,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn common-atom [state]
-  (let [length (unsigned-int-from-2-bytes (apply array (take-bytes! 2 state)))]
+  (let [length (unsigned-int-from-2-bytes (take-bytes! 2 state))]
     (->> (take-bytes! length state)
-         (apply array)
          crypt/utf8ByteArrayToString
          keyword)))
 
@@ -119,7 +120,7 @@
 
 (defn decode-small-atom-utf8 [state]
   (let [length (take-byte! state)]
-    (-> (apply array (take-bytes! length state))
+    (-> (take-bytes! length state)
         crypt/utf8ByteArrayToString
         keyword
         (add-to-result! state))))
@@ -142,7 +143,7 @@
     (add-to-result! elements state)))
 
 (defn decode-large-tuple [state]
-  (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
+  (let [length (signed-int-from-4-bytes (take-bytes! 4 state))
         elements (loop [i 0
                         c (transient [])]
                    (if (< i length)
@@ -158,13 +159,13 @@
   (add-to-result! [] state))
 
 (defn decode-string [state]
-  (let [length (unsigned-int-from-2-bytes (apply array (take-bytes! 2 state)))
-        elements (take-bytes! length state)]
+  (let [length (unsigned-int-from-2-bytes (take-bytes! 2 state))
+        elements (vec (take-bytes! length state))]
 
     (add-to-result! elements state)))
 
 (defn decode-list [state]
-  (let [length (signed-int-from-4-bytes (apply array (take-bytes! 4 state)))
+  (let [length (signed-int-from-4-bytes (take-bytes! 4 state))
         elements (loop [i 0
                         c (transient [])]
                    (if (< i length)
@@ -184,7 +185,6 @@
 (defn decode-map [state]
   (let [number-of-kv-pairs (->> state
                                 (take-bytes! 4)
-                                (apply array)
                                 signed-int-from-4-bytes)
         elements (loop [i 0
                         c (transient {})]
