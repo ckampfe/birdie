@@ -18,7 +18,41 @@ cljs.user> (b/encode {:hi "there"} {:kind :typed-array})
 #object[Uint8Array 131,116,0,0,0,1,119,2,104,105,109,0,0,0,5,116,104,101,114,101]
 ```
 
-Note that this library does not currently support the entire set of encodable/decodable Erlang terms. It supports a subset that is roughly equivalent to those present in JSON. See the tests for more information.
+
+## Type correspondence
+
+Note that this library does not currently support the entire set of encodable/decodable Erlang terms.
+It supports a subset that is roughly equivalent to those present in JSON.
+Also note that the API works on native Clojurescript datastructures/types, like `[1 2 3]`,
+not on proxy/wrapper types like a hypothetical `(->birdie.List [1 2 3])` or something.
+There really is no reason for this other than this is how I've implemented this version.
+If there is a compelling reason to do otherwise, I might consider changing it. I may have to include
+one or two proxy types for the odd-but-common case of Clojurescript not having an equivalent of
+Erlang's `tuple` type. See below, as well as the tests for more information.
+
+```
+| Clojurescript                | Erlang/ETF                        |
+| cljs.core/Keyword            | atom (utf8)                       |
+| js/string                    | binary                            |
+| js/number                    | new float, small integer, integer |
+| js/boolean                   | atom (regular)                    |
+| cljs.core/PersistentVector   | list                              |
+| cljs.core/List               | list                              |
+| cljs.core/EmptyList          | list                              |
+| cljs.core/PersistentHashSet  | list                              |
+| cljs.core/PersistentHashMap  | map                               |
+| cljs.core/PersistentArrayMap | map                               |
+```
+
+The encode stack implements `birdie.encode.Encodable` for the above types, so you don't have
+to wait for me if you want to encode a new/different type (or override one of the above) and send it to Erlang.
+Just `(extend-protocol birdie.encode.Encodable YourType (do-encode [this] ...))` and you're off to the races.
+
+The decode stack dispatches raw bytes against a `case` statement for performance, so unfortunately
+that one is not user extendable. That said, it should decode most things from Erlang that are
+usable Clojurescript/Javascript values. I'll be working to determine Clojurescript/Javascript
+representations of things like `port`, `pid` and `reference` as I get the time, but they are
+not high priorities.
 
 ## Benchmarks
 
@@ -185,6 +219,7 @@ benchmarking JSON large map with 100 iterations and 5 warmup runs
 - [ ] can encode be optimized?
 - [ ] is encode being `cljs -> bytevector` the right API? Should it be `cljs-> string` or `cljs -> js array` or `cljs -> js typed array`?
 - [ ] blog post explaining optimization process
+- [ ] publish artifact to...cljsjs? npm?
 
 
 ## License
