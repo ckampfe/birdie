@@ -32,10 +32,10 @@ Erlang's `tuple` type. See below, as well as the tests for more information.
 
 ```
 | Clojurescript                | Erlang/ETF                        |
-| cljs.core/Keyword            | atom (utf8)                       |
 | js/string                    | binary                            |
 | js/number                    | new float, small integer, integer |
 | js/boolean                   | atom (regular)                    |
+| cljs.core/Keyword            | atom (utf8)                       |
 | cljs.core/PersistentVector   | list                              |
 | cljs.core/List               | list                              |
 | cljs.core/EmptyList          | list                              |
