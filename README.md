@@ -178,6 +178,14 @@ benchmarking JSON large map with 100 iterations and 5 warmup runs
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ```
 
+## Todo
+
+- [ ] figure out what to do about tuples
+- [ ] should the API be based on records rather than Clojure builtin types? (`(->birdie.List 1 2 3)` vs `[1 2 3]`)
+- [ ] can encode be optimized?
+- [ ] is encode being `cljs -> bytevector` the right API? Should it be `cljs-> string` or `cljs -> js array` or `cljs -> js typed array`?
+- [ ] blog post explaining optimization process
+
 
 ## License
 
