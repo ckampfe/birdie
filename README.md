@@ -220,6 +220,7 @@ benchmarking JSON large map with 100 iterations and 5 warmup runs
 - [ ] is encode being `cljs -> bytevector` the right API? Should it be `cljs-> string` or `cljs -> js array` or `cljs -> js typed array`?
 - [ ] blog post explaining optimization process
 - [ ] publish artifact to...cljsjs? npm?
+- [ ] implement compression
 
 
 ## License
