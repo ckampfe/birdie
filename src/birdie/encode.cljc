@@ -171,9 +171,6 @@
   cljs.core/PersistentArrayMap
   (do-encode [this] (encode-map this))
 
-  boolean
-  (do-encode [this] (encode-atom this))
-
   default
   (do-encode [this] (throw js/Error "No encoder found for" this)))
 
