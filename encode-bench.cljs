@@ -2,7 +2,6 @@
   (:require [birdie.core :as b]))
 
 (def small-homogenous-vector [1 2 3 4 5])
-(def small-homogenous-string-vector ["hi" "there" "how" "are" "you"])
 (def large-homogenous-vector (into [] (range 0 10000)))
 (def large-heterogenous-vector (->> [:a "b" 3 [4] {:z :t}]
                                     cycle
@@ -26,10 +25,6 @@
                             :data small-homogenous-vector
                             :bench-fn (comp (fn [c] (dorun c)) b/encode)
                             :i 10000}
-                           {:name "ETF small homogenous string vector"
-                            :data small-homogenous-string-vector
-                            :bench-fn (comp (fn [c] (dorun c)) b/encode)
-                            :i 10000}
                            {:name "ETF large homogenous vector"
                             :data large-homogenous-vector
                             :bench-fn (comp (fn [c] (dorun c)) b/encode)
@@ -50,10 +45,6 @@
              {:suite-name "JSON encode benchmarks"
               :benchmarks [{:name "JSON small homogenous vector"
                             :data small-homogenous-vector
-                            :bench-fn json-encode
-                            :i 10000}
-                           {:name "JSON small homogenous string vector"
-                            :data small-homogenous-string-vector
                             :bench-fn json-encode
                             :i 10000}
                            {:name "JSON large homogenous vector"
