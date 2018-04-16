@@ -7,7 +7,7 @@
    (encode exp nil))
   ([exp opts]
    (let [kind (:kind opts)
-         res (e/encode exp)]
+         res (cons 131 (e/encode exp))]
 
      (cond
        (or (= "array" kind)
