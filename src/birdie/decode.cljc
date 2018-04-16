@@ -22,11 +22,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn take-bytes! [n state]
-  (let [[bytes remaining] (split-at n (.-bytes state))]
-    (set! (.-bytes state) remaining)
-    bytes))
-
-#_(defn take-bytes! [n state]
   (loop [i 0
          bytes (transient [])
          pos (.-position state)]
