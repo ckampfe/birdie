@@ -70,40 +70,37 @@
   (let [bytes (string-to-byte-vector exp)
         size-bytes (int-to-4-bytes (count bytes))]
 
-    (persistent! (apply conj!
-                        (->> size-bytes
-                             (cons 109)
-                             (into [])
-                             transient)
-                        bytes))))
+    (persistent!
+     (reduce conj!
+             (transient (into [] (cons 109 size-bytes)))
+             bytes))))
 
 (defn encode-small-atom-utf8 [bytes length]
   (cons 119 (cons length bytes)))
 
 (defn encode-atom-utf8 [bytes length]
   (let [length-bytes (int-to-2-bytes length)]
-    (cons 118 (concat length-bytes bytes))))
+    (cons 118 (into length-bytes bytes))))
 
 (defn encode-atom [exp]
   (let [bytes (string-to-byte-vector (str exp))
         length-bytes (->> bytes
                           count
                           int-to-2-bytes)]
-    (cons 100 (concat length-bytes bytes))))
+    (cons 100 (into length-bytes bytes))))
 
 (defn encode-seq [exp]
-  (let [elements (->> exp
-                      (reduce (fn [acc val]
-                                (apply conj! acc (do-encode val)))
-                              (transient []))
-                      persistent!)
-        length-bytes (->> exp
+  (let [length-bytes (->> exp
                           count
-                          int-to-4-bytes)]
+                          int-to-4-bytes)
+        elements (->> exp
+                      (reduce (fn [acc v]
+                                (reduce conj! acc (do-encode v)))
+                              (transient []))
+                      persistent!)]
 
-    (cons 108 (concat length-bytes
-                      elements
-                      (vector 106)))))
+    (cons 108 (into (into length-bytes elements)
+                    (vector 106)))))
 
 (defn encode-map [exp]
   (let [length-bytes (->> exp
