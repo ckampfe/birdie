@@ -111,13 +111,13 @@
                           int-to-4-bytes)
         elements (->> exp
                       (reduce (fn [acc [k v]]
-                                (apply conj!
-                                       (apply conj! acc (do-encode k))
-                                       (do-encode v)))
+                                (reduce conj!
+                                        (reduce conj! acc (do-encode k))
+                                        (do-encode v)))
                               (transient []))
                       persistent!)]
 
-    (cons 116 (concat length-bytes elements))))
+    (cons 116 (into length-bytes elements))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
