@@ -90,7 +90,7 @@
 ;;; 
 ;;; `119` is the tag byte, which maps directly to a data type. In this case, `SMALL_ATOM_UTF8_EXT`, meaning our keyword has been mapped to the small UTF8 encoding of an Erlang atom. (You can find the whole doc [here](http://erlang.org/doc/apps/erts/erl_ext_dist.html))
 ;;; 
-;;; The spec for `SMALL_ATOM_UTF8_EXT` says that the remainder of the encoding is 1 byte for the length of the atom, followed by that many UTF8 encoded bytes. In our case, the length byte is `2`, meaning there are two data bytes. he two data bytes `111` and `107` are the UTF8 byte encodings of `o` and `k`, respectively.
+;;; The spec for `SMALL_ATOM_UTF8_EXT` says that the remainder of the encoding is 1 byte for the length of the atom, followed by that many UTF8 encoded bytes. In our case, the length byte is `2`, meaning there are two data bytes. The two data bytes `111` and `107` are the UTF8 byte encodings of `o` and `k`, respectively.
 ;;; 
 ;;; Putting it all together, it looks like this:
 ;;; 
