@@ -1,10 +1,12 @@
 ;; gorilla-repl.fileformat = 1
 
 ;; **
-;;; # birdie performance journey
+;;; # birdie performance journey - Clark Kampfe
 ;; **
 
 ;; **
+;;; (note: this post remains a work in progress)
+;;; 
 ;;; Recently I began work on a library called [Birdie](https://github.com/ckampfe/birdie).
 ;;; 
 ;;; Birdie is an implementation to encode and decode [Erlang's External Term Format](http://erlang.org/doc/apps/erts/erl_ext_dist.html) in Clojurescript.
@@ -234,7 +236,7 @@
 ;;; Constant time dispatch function
 ;;; 
 ;;; 
-;;; Went form a typemap and multimethod-based dispatch like
+;;; Went from a typemap and multimethod-based dispatch like
 ;;; 
 ;;; ```
 ;;; (defmethod do-decode :ATOM_UTF8 [state]
@@ -319,7 +321,7 @@
 ;;;           bytes)))))
 ;;; ```
 ;;; 
-;;; Note that `bytes` is now preallocated to the exact size that the caller has request.
+;;; Note that `bytes` is now preallocated to the exact size that the caller has requested.
 ;;; Before, it would have to grow this collection with the addition of every element.
 ;;; Also observe that we are using `(make-array)`, which is a native Javascript array rather
 ;;; than a Clojurescript persistent or transient vector as before.
@@ -547,6 +549,8 @@
 ;;; It helped me to write the initial version using persistent collections that are expressive and intuitive. This made it a lot simpler to build, as I could spend most of my time on the important stuff, like understanding ETF and coming up with an information model.
 ;;; 
 ;;; From there, I was able to develop a benchmark suite and start making tweaks to various paths I guessed were hot.
+;;; 
+;;; Thanks to Matt Moore, Roland Cooper, Erin Greenhalgh, and David Pick for reading drafts of this post.
 ;;; 
 ;;; (INSERT CITATION OF BLOG POSTS AND OTHER THINGS THAT HELPED HERE)
 ;; **
