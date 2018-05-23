@@ -18,8 +18,8 @@
 
              (aset int-view 0 n)
 
-             (mapv (fn [i] (aget byte-view i))
-                   (rseq (vec (range 2)))))))
+             [(aget byte-view 1)
+              (aget byte-view 0)])))
 
 (defn int-to-4-bytes [n]
   (let [buf (new js/ArrayBuffer 4)
@@ -28,8 +28,10 @@
 
     (aset int-view 0 n)
 
-    (mapv (fn [i] (aget byte-view i))
-          (rseq (vec (range 4))))))
+    [(aget byte-view 3)
+     (aget byte-view 2)
+     (aget byte-view 1)
+     (aget byte-view 0)]))
 
 (defn double-to-8-bytes [n]
   (let [buf (new js/ArrayBuffer 8)
@@ -38,8 +40,14 @@
 
     (aset float-view 0 n)
 
-    (mapv (fn [i] (aget byte-view i))
-          (rseq (vec (range 8))))))
+    [(aget byte-view 7)
+     (aget byte-view 6)
+     (aget byte-view 5)
+     (aget byte-view 4)
+     (aget byte-view 3)
+     (aget byte-view 2)
+     (aget byte-view 1)
+     (aget byte-view 0)]))
 
 (defn is-float? [n]
   (not= (js/parseInt n 10) n))
