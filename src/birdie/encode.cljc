@@ -49,14 +49,14 @@
      (aget byte-view 1)
      (aget byte-view 0)]))
 
-(defn is-float? [n]
+(defn ^boolean is-float? [n]
   (not= (js/parseInt n 10) n))
 
-(defn fits-in-unsigned-byte? [n]
+(defn ^boolean fits-in-unsigned-byte? [n]
   (and (>= n 0)
        (< n 256)))
 
-(defn fits-in-4-bytes? [n]
+(defn ^boolean fits-in-4-bytes? [n]
   (or (>= n min-32-bit-signed-int)
       (<= n max-32-bit-signed-int)))
 
@@ -72,16 +72,19 @@
   (cons 98 (int-to-4-bytes n)))
 
 (defn string-to-byte-vector [exp]
-  (vec (crypt/stringToUtf8ByteArray exp)))
+  (crypt/stringToUtf8ByteArray exp))
 
 (defn encode-string [exp]
   (let [bytes (string-to-byte-vector exp)
-        size-bytes (int-to-4-bytes (count bytes))]
+        size-bytes (int-to-4-bytes (.-length bytes))]
 
-    (persistent!
-     (reduce conj!
-             (transient (into [] (cons 109 size-bytes)))
-             bytes))))
+    (.unshift bytes (size-bytes 3))
+    (.unshift bytes (size-bytes 2))
+    (.unshift bytes (size-bytes 1))
+    (.unshift bytes (size-bytes 0))
+    (.unshift bytes 109)
+
+    (into [] bytes)))
 
 (defn encode-small-atom-utf8 [bytes length]
   (cons 119 (cons length bytes)))
@@ -91,10 +94,9 @@
     (cons 118 (into length-bytes bytes))))
 
 (defn encode-atom [exp]
-  (let [bytes (string-to-byte-vector (str exp))
-        length-bytes (->> bytes
-                          count
-                          int-to-2-bytes)]
+  (let [bytes (string-to-byte-vector (.toString exp))
+        length-bytes (int-to-2-bytes (.-length bytes))]
+
     (cons 100 (into length-bytes bytes))))
 
 (defn encode-seq [exp]
@@ -105,10 +107,12 @@
                       (reduce (fn [acc v]
                                 (reduce conj! acc (do-encode v)))
                               (transient []))
-                      persistent!)]
+                      persistent!)
+        ]
 
-    (cons 108 (into (into length-bytes elements)
-                    (vector 106)))))
+    (cons 108 (-> length-bytes
+                  (into elements)
+                  (into (vector 106))))))
 
 (defn encode-map [exp]
   (let [length-bytes (->> exp
@@ -136,7 +140,7 @@
 
 (defn encode-keyword [exp]
   (let [bytes (string-to-byte-vector (name exp))
-        length (count bytes)]
+        length (.-length bytes)]
 
     (cond
       (< length 256) (encode-small-atom-utf8 bytes length)
