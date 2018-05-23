@@ -113,10 +113,10 @@
 
 (defn decode-atom [state]
   (let [kw (common-atom state)]
-    (cond
-      (= :true kw) (add-to-result! true state)
-      (= :false kw) (add-to-result! false state)
-      :default (add-to-result! kw state))))
+    (case kw
+      :true (add-to-result! true state)
+      :false (add-to-result! false state)
+      (add-to-result! kw state))))
 
 (defn decode-small-atom-utf8 [state]
   (let [length (take-byte! state)]
