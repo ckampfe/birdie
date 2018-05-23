@@ -1,5 +1,6 @@
 (ns birdie.encode
-  #?(:cljs (:require [goog.crypt :as crypt])))
+  #?(:cljs (:require [goog.crypt :as crypt]))
+  #?(:cljs (:require-macros [birdie.macros :as macros])))
 
 (def max-32-bit-signed-int 2147483647)
 (def min-32-bit-signed-int -2147483648)
@@ -11,7 +12,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn int-to-2-bytes [n]
+(macros/int-to-4-bytes 5)
+
+#_(defn int-to-2-bytes [n]
   #?(:cljs (let [buf (new js/ArrayBuffer 2)
                  byte-view (new js/Uint8Array buf)
                  int-view (new js/Int16Array buf)]
@@ -21,7 +24,7 @@
              [(aget byte-view 1)
               (aget byte-view 0)])))
 
-(defn int-to-4-bytes [n]
+#_(defn int-to-4-bytes [n]
   (let [buf (new js/ArrayBuffer 4)
         byte-view (new js/Uint8Array buf)
         int-view (new js/Int32Array buf)]
@@ -33,7 +36,7 @@
      (aget byte-view 1)
      (aget byte-view 0)]))
 
-(defn double-to-8-bytes [n]
+#_(defn double-to-8-bytes [n]
   (let [buf (new js/ArrayBuffer 8)
         byte-view (new js/Uint8Array buf)
         float-view (new js/Float64Array buf)]
@@ -50,7 +53,7 @@
      (aget byte-view 0)]))
 
 (defn ^boolean is-float? [n]
-  (not= (js/parseInt n 10) n))
+  #?(:cljs (not= (js/parseInt n 10) n)))
 
 (defn ^boolean fits-in-unsigned-byte? [n]
   (and (>= n 0)
@@ -63,20 +66,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn encode-new-float [n]
-  (cons 70 (double-to-8-bytes n)))
+  (cons 70 (macros/double-to-8-bytes n)))
 
 (defn encode-small-integer [n]
   (vector 97 n))
 
 (defn encode-integer [n]
-  (cons 98 (int-to-4-bytes n)))
+  (cons 98 (macros/int-to-4-bytes n)))
 
 (defn string-to-byte-vector [exp]
   (crypt/stringToUtf8ByteArray exp))
 
 (defn encode-string [exp]
   (let [bytes (string-to-byte-vector exp)
-        size-bytes (int-to-4-bytes (.-length bytes))]
+        size-bytes (macros/int-to-4-bytes (.-length bytes))]
 
     (.unshift bytes (size-bytes 3))
     (.unshift bytes (size-bytes 2))
@@ -90,19 +93,19 @@
   (cons 119 (cons length bytes)))
 
 (defn encode-atom-utf8 [bytes length]
-  (let [length-bytes (int-to-2-bytes length)]
+  (let [length-bytes (macros/int-to-2-bytes length)]
     (cons 118 (into length-bytes bytes))))
 
 (defn encode-atom [exp]
   (let [bytes (string-to-byte-vector (.toString exp))
-        length-bytes (int-to-2-bytes (.-length bytes))]
+        length-bytes (macros/int-to-2-bytes (.-length bytes))]
 
     (cons 100 (into length-bytes bytes))))
 
 (defn encode-seq [exp]
   (let [length-bytes (->> exp
                           count
-                          int-to-4-bytes)
+                          macros/int-to-4-bytes)
         elements (->> exp
                       (reduce (fn [acc v]
                                 (reduce conj! acc (do-encode v)))
@@ -117,7 +120,7 @@
 (defn encode-map [exp]
   (let [length-bytes (->> exp
                           count
-                          int-to-4-bytes)
+                          macros/int-to-4-bytes)
         elements (->> exp
                       (reduce (fn [acc [k v]]
                                 (reduce conj!
