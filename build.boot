@@ -7,7 +7,7 @@
                             [org.clojure/clojurescript "1.10.238"]
                             [adzerk/boot-cljs            "2.1.4"          :scope "test"]
                             [crisptrutski/boot-cljs-test "0.3.5-SNAPSHOT" :scope "test"]
-                            [com.cemerick/piggieback     "0.2.2"          :scope "test"]
+                            [cider/piggieback            "0.3.5"          :scope "test"]
                             [adzerk/boot-test            "RELEASE"        :scope "test"]])
 
 (task-options!
