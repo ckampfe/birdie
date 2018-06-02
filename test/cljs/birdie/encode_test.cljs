@@ -84,24 +84,24 @@
            (c/decode (c/encode [{} {} {} [{} {}] 1])))))
 
   (testing "encodes to various output types"
-    (is (= cljs.core/Cons
+    (is (= js/Array
            (type (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}))))
 
-    (is (= js/Array
+    (is (= cljs.core/PersistentVector
            (type (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}
-                           {:kind :array}))))
+                           {:kind :cljs}))))
 
     (is (= js/Uint8Array
            (type (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}
                            {:kind :typed-array})))))
 
   (testing "js interface works"
-    (is (= cljs.core/Cons
+    (is (= js/Array
            (type (c/encode-js (clj->js [1 2 3])))))
 
-    (is (= js/Array
+    (is (= cljs.core/PersistentVector
            (type (c/encode-js (clj->js [1 2 3])
-                              (clj->js {:kind :array})))))
+                              (clj->js {:kind :cljs})))))
 
     (is (= js/Uint8Array
            (type (c/encode-js (clj->js [1 2 3])

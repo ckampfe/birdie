@@ -18,8 +18,9 @@
 
              (aset int-view 0 n)
 
-             [(aget byte-view 1)
-              (aget byte-view 0)])))
+             (array
+              (aget byte-view 1)
+              (aget byte-view 0)))))
 
 (defn int-to-4-bytes [n]
   (let [buf (new js/ArrayBuffer 4)
@@ -28,10 +29,11 @@
 
     (aset int-view 0 n)
 
-    [(aget byte-view 3)
+    (array
+     (aget byte-view 3)
      (aget byte-view 2)
      (aget byte-view 1)
-     (aget byte-view 0)]))
+     (aget byte-view 0))))
 
 (defn double-to-8-bytes [n]
   (let [buf (new js/ArrayBuffer 8)
@@ -40,14 +42,15 @@
 
     (aset float-view 0 n)
 
-    [(aget byte-view 7)
+    (array
+     (aget byte-view 7)
      (aget byte-view 6)
      (aget byte-view 5)
      (aget byte-view 4)
      (aget byte-view 3)
      (aget byte-view 2)
      (aget byte-view 1)
-     (aget byte-view 0)]))
+     (aget byte-view 0))))
 
 (defn ^boolean is-float? [n]
   (not= (js/parseInt n 10) n))
@@ -63,13 +66,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn encode-new-float [n]
-  (cons 70 (double-to-8-bytes n)))
+  (let [arr (double-to-8-bytes n)]
+    (.unshift arr 70)
+    arr))
 
 (defn encode-small-integer [n]
-  (vector 97 n))
+  (array 97 n))
 
 (defn encode-integer [n]
-  (cons 98 (int-to-4-bytes n)))
+  (let [arr (int-to-4-bytes n)]
+    (.unshift arr 98)
+    arr))
 
 (defn string-to-byte-vector [exp]
   (crypt/stringToUtf8ByteArray exp))
@@ -78,55 +85,83 @@
   (let [bytes (string-to-byte-vector exp)
         size-bytes (int-to-4-bytes (.-length bytes))]
 
-    (.unshift bytes (size-bytes 3))
-    (.unshift bytes (size-bytes 2))
-    (.unshift bytes (size-bytes 1))
-    (.unshift bytes (size-bytes 0))
+    (.unshift bytes (aget size-bytes 3))
+    (.unshift bytes (aget size-bytes 2))
+    (.unshift bytes (aget size-bytes 1))
+    (.unshift bytes (aget size-bytes 0))
     (.unshift bytes 109)
 
-    (into [] bytes)))
+    bytes))
 
 (defn encode-small-atom-utf8 [bytes length]
-  (cons 119 (cons length bytes)))
+  (.unshift bytes length)
+  (.unshift bytes 119)
+  bytes)
 
 (defn encode-atom-utf8 [bytes length]
-  (let [length-bytes (int-to-2-bytes length)]
-    (cons 118 (into length-bytes bytes))))
+  (.apply (.-unshift bytes)
+          bytes
+          (int-to-2-bytes length))
+
+  (.unshift bytes 118)
+
+  bytes)
 
 (defn encode-atom [exp]
   (let [bytes (string-to-byte-vector (.toString exp))
         length-bytes (int-to-2-bytes (.-length bytes))]
 
-    (cons 100 (into length-bytes bytes))))
+    (.apply (.-unshift bytes)
+            bytes
+            (int-to-2-bytes (.-length bytes)))
+
+    (.unshift bytes 100)
+
+    bytes))
+
+(defn encode-indexed [exp]
+  (let [length-bytes (->> exp
+                          count
+                          int-to-4-bytes)
+        n (count exp)]
+
+    (loop [i 0]
+      (if (< i n)
+        (do
+          (.apply (.-push length-bytes)
+                  length-bytes (do-encode (nth exp i)))
+          (recur (inc i)))))
+
+    (.unshift length-bytes 108)
+    (.push length-bytes 106)
+    length-bytes))
 
 (defn encode-seq [exp]
   (let [length-bytes (->> exp
                           count
-                          int-to-4-bytes)
-        elements (->> exp
-                      (reduce (fn [acc v]
-                                (reduce conj! acc (do-encode v)))
-                              (transient []))
-                      persistent!)
-        ]
+                          int-to-4-bytes)]
 
-    (cons 108 (-> length-bytes
-                  (into elements)
-                  (into (vector 106))))))
+    (doseq [el exp]
+      (.apply (.-push length-bytes)
+              length-bytes (do-encode el)))
+
+    (.unshift length-bytes 108)
+    (.push length-bytes 106)
+    length-bytes))
 
 (defn encode-map [exp]
   (let [length-bytes (->> exp
                           count
-                          int-to-4-bytes)
-        elements (->> exp
-                      (reduce (fn [acc [k v]]
-                                (reduce conj!
-                                        (reduce conj! acc (do-encode k))
-                                        (do-encode v)))
-                              (transient []))
-                      persistent!)]
+                          int-to-4-bytes)]
 
-    (cons 116 (into length-bytes elements))))
+    (doseq [[k v] exp]
+      (.apply (.-push length-bytes)
+              length-bytes (do-encode k))
+      (.apply (.-push length-bytes)
+              length-bytes (do-encode v)))
+
+    (.unshift length-bytes 116)
+    length-bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,7 +198,7 @@
   (do-encode [this] (encode-atom this))
 
   cljs.core/PersistentVector
-  (do-encode [this] (encode-seq this))
+  (do-encode [this] (encode-indexed this))
 
   cljs.core/List
   (do-encode [this] (encode-seq (reverse this)))
@@ -184,4 +219,6 @@
   (do-encode [this] (throw js/Error "No encoder found for" this)))
 
 (defn encode [exp]
-  (cons 131 (do-encode exp)))
+  (let [arr (do-encode exp)]
+    (.unshift arr 131)
+    arr))

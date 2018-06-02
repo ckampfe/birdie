@@ -10,8 +10,8 @@
          res (e/encode exp)]
 
      (cond
-       (or (= "array" kind)
-           (= :array  kind)) (clj->js res)
+       (or (= "cljs" kind)
+           (= :cljs  kind)) (js->clj res)
 
        (or (= "typed-array" kind)
            (= :typed-array kind)) (new js/Uint8Array (clj->js res))
