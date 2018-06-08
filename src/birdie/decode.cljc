@@ -5,21 +5,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#?(:cljs (defn signed-int-from-4-bytes [byte-array]
-           (let [arr (new js/Uint8Array byte-array)
-                 buf (.-buffer arr)
-                 dv (new js/DataView buf)]
-             (.getInt32 dv 0))))
+(def EIGHT_BYTES #?(:cljs (new js/Uint8Array (new js/ArrayBuffer 8))))
+(def EIGHT_BYTE_DV #?(:cljs (new js/DataView (.-buffer EIGHT_BYTES))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def FOUR_BYTES #?(:cljs (new js/Uint8Array (new js/ArrayBuffer 4))))
+(def FOUR_BYTE_DV #?(:cljs (new js/DataView (.-buffer FOUR_BYTES))))
 
-#?(:cljs (defn unsigned-int-from-2-bytes [byte-array]
-           (let [arr (new js/Uint8Array byte-array)
-                 buf (.-buffer arr)
-                 dv (new js/DataView buf)]
-             (.getUint16 dv 0))))
+(def TWO_BYTES #?(:cljs (new js/Uint8Array (new js/ArrayBuffer 2))))
+(def TWO_BYTE_DV #?(:cljs (new js/DataView (.-buffer TWO_BYTES))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn signed-int-from-4-bytes [byte-array]
+  (aset FOUR_BYTES 0 (aget byte-array 0))
+  (aset FOUR_BYTES 1 (aget byte-array 1))
+  (aset FOUR_BYTES 2 (aget byte-array 2))
+  (aset FOUR_BYTES 3 (aget byte-array 3))
+  (.getInt32 FOUR_BYTE_DV 0))
+
+(defn unsigned-int-from-4-bytes [byte-array]
+  (aset FOUR_BYTES 0 (aget byte-array 0))
+  (aset FOUR_BYTES 1 (aget byte-array 1))
+  (aset FOUR_BYTES 2 (aget byte-array 2))
+  (aset FOUR_BYTES 3 (aget byte-array 3))
+  (.getUint32 FOUR_BYTE_DV 0))
+
+(defn unsigned-int-from-2-bytes [byte-array]
+  (aset TWO_BYTES 0 (aget byte-array 0))
+  (aset TWO_BYTES 1 (aget byte-array 1))
+  (.getUint16 TWO_BYTE_DV 0))
 
 (defn take-bytes! [n state]
   (let [bytes (make-array n)]
@@ -69,7 +81,7 @@
                     state)))
 
 (defn decode-large-big [state]
-  (let [length (signed-int-from-4-bytes (take-bytes! 4 state))
+  (let [length (unsigned-int-from-4-bytes (take-bytes! 4 state))
         sign-byte (take-byte! state)
         digits (take-bytes! length state)
         n (reduce (fn [acc val]
@@ -90,17 +102,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn decode-binary [state]
-  (let [length #?(:cljs (signed-int-from-4-bytes (take-bytes! 4 state)))]
+  (let [length #?(:cljs (unsigned-int-from-4-bytes (take-bytes! 4 state)))]
     (add-to-result! (crypt/utf8ByteArrayToString (take-bytes! length state))
                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn decode-new-float [state]
-  (let [arr (new js/Uint8Array (take-bytes! 8 state))
-        buf (.-buffer arr)
-        dv (new js/DataView buf)]
-    (add-to-result! (.getFloat64 dv 0)
+  (let [byte-array (take-bytes! 8 state)]
+    (aset EIGHT_BYTES 0 (aget byte-array 0))
+    (aset EIGHT_BYTES 1 (aget byte-array 1))
+    (aset EIGHT_BYTES 2 (aget byte-array 2))
+    (aset EIGHT_BYTES 3 (aget byte-array 3))
+    (aset EIGHT_BYTES 4 (aget byte-array 4))
+    (aset EIGHT_BYTES 5 (aget byte-array 5))
+    (aset EIGHT_BYTES 6 (aget byte-array 6))
+    (aset EIGHT_BYTES 7 (aget byte-array 7))
+    (add-to-result! (.getFloat64 EIGHT_BYTE_DV 0)
                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,7 +161,7 @@
     (add-to-result! elements state)))
 
 (defn decode-large-tuple [state]
-  (let [length (signed-int-from-4-bytes (take-bytes! 4 state))
+  (let [length (unsigned-int-from-4-bytes (take-bytes! 4 state))
         elements (loop [i 0
                         c (transient [])]
                    (if (< i length)
@@ -165,7 +183,7 @@
     (add-to-result! elements state)))
 
 (defn decode-list [state]
-  (let [length (signed-int-from-4-bytes (take-bytes! 4 state))
+  (let [length (unsigned-int-from-4-bytes (take-bytes! 4 state))
         elements (loop [i 0
                         c (transient [])]
                    (if (< i length)
@@ -185,7 +203,7 @@
 (defn decode-map [state]
   (let [number-of-kv-pairs (->> state
                                 (take-bytes! 4)
-                                signed-int-from-4-bytes)
+                                unsigned-int-from-4-bytes)
         elements (loop [i 0
                         c (transient {})]
                    (if (< i number-of-kv-pairs)
