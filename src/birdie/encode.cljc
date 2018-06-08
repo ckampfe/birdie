@@ -11,46 +11,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def TWO_BYTES #?(:cljs (new js/ArrayBuffer 2)))
+(def TWO_BYTE_VIEW #?(:cljs (new js/Uint8Array TWO_BYTES)))
+(def TWO_BYTES_AS_INT16 #?(:cljs (new js/Int16Array TWO_BYTES)))
+
+(def FOUR_BYTES #?(:cljs (new js/ArrayBuffer 4)))
+(def FOUR_BYTE_VIEW #?(:cljs (new js/Uint8Array FOUR_BYTES)))
+(def FOUR_BYTES_AS_INT32 #?(:cljs (new js/Int32Array FOUR_BYTES)))
+
+(def EIGHT_BYTES #?(:cljs (new js/ArrayBuffer 8)))
+(def EIGHT_BYTE_VIEW #?(:cljs (new js/Uint8Array EIGHT_BYTES)))
+(def EIGHT_BYTES_AS_DOUBLE64 #?(:cljs (new js/Float64Array EIGHT_BYTES)))
+
 (defn int-to-2-bytes [n]
-  #?(:cljs (let [buf (new js/ArrayBuffer 2)
-                 byte-view (new js/Uint8Array buf)
-                 int-view (new js/Int16Array buf)]
-
-             (aset int-view 0 n)
-
-             (array
-              (aget byte-view 1)
-              (aget byte-view 0)))))
+  (aset TWO_BYTES_AS_INT16 0 n)
+  (array
+   (aget TWO_BYTE_VIEW 1)
+   (aget TWO_BYTE_VIEW 0)))
 
 (defn int-to-4-bytes [n]
-  (let [buf (new js/ArrayBuffer 4)
-        byte-view (new js/Uint8Array buf)
-        int-view (new js/Int32Array buf)]
-
-    (aset int-view 0 n)
-
-    (array
-     (aget byte-view 3)
-     (aget byte-view 2)
-     (aget byte-view 1)
-     (aget byte-view 0))))
+  (aset FOUR_BYTES_AS_INT32 0 n)
+  (array
+   (aget FOUR_BYTE_VIEW 3)
+   (aget FOUR_BYTE_VIEW 2)
+   (aget FOUR_BYTE_VIEW 1)
+   (aget FOUR_BYTE_VIEW 0)))
 
 (defn double-to-8-bytes [n]
-  (let [buf (new js/ArrayBuffer 8)
-        byte-view (new js/Uint8Array buf)
-        float-view (new js/Float64Array buf)]
-
-    (aset float-view 0 n)
-
-    (array
-     (aget byte-view 7)
-     (aget byte-view 6)
-     (aget byte-view 5)
-     (aget byte-view 4)
-     (aget byte-view 3)
-     (aget byte-view 2)
-     (aget byte-view 1)
-     (aget byte-view 0))))
+  (aset EIGHT_BYTES_AS_DOUBLE64 0 n)
+  (array
+   (aget EIGHT_BYTE_VIEW 7)
+   (aget EIGHT_BYTE_VIEW 6)
+   (aget EIGHT_BYTE_VIEW 5)
+   (aget EIGHT_BYTE_VIEW 4)
+   (aget EIGHT_BYTE_VIEW 3)
+   (aget EIGHT_BYTE_VIEW 2)
+   (aget EIGHT_BYTE_VIEW 1)
+   (aget EIGHT_BYTE_VIEW 0)))
 
 (defn ^boolean is-float? [n]
   (not= (js/parseInt n 10) n))
