@@ -58,8 +58,8 @@
     (is (= [1 [:a :b] 2.2] (c/decode (vector  131 104 3 97 1 104 2 100 0 1 97 100 0 1 98 70 64 1 153 153 153 153 153 154)))))
 
   (testing "large tuples"
-    (let [large-seq (range 0 256)]
-      (is (= (vec large-seq) (c/decode fixtures/zero-to-255)))))
+    (let [big-vec (vec (range 10000))]
+      (is (= big-vec (c/decode (c/encode (birdie.encode/->Tuple big-vec)))))))
 
   (testing "empty list aka NIL"
     (is (= [] (c/decode (vector 131 106)))))

@@ -76,6 +76,15 @@
       (is (= {} (c/decode (c/encode (hash-map)))))
       (is (= big-map (c/decode (c/encode big-map))))))
 
+  (testing "tuples"
+    ;; impractical to initialize vectors that are 2**32 - 1 elements long
+    ;; :(
+    (let [big-vec (mapv (fn [_] :k) (range 10000))]
+      (is (= (map + (range 3)) (c/decode (c/encode (birdie.encode/->Tuple (map + (range 3)))))))
+      (is (= [] (c/decode (c/encode (birdie.encode/->Tuple [])))))
+      (is (= [1 2 3] (c/decode (c/encode (birdie.encode/->Tuple [1 2 3])))))
+      (is (= big-vec (c/decode (c/encode (birdie.encode/->Tuple big-vec)))))))
+
   (testing "complex structures"
     (is (= {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}
            (c/decode (c/encode {:a [1 2 {"hello" "goodbye" 1 7 8 :hok}]}))))

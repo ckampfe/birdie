@@ -1,13 +1,18 @@
 (ns birdie.encode
   #?(:cljs (:require [goog.crypt :as crypt])))
 
-(def max-32-bit-signed-int 2147483647)
-(def min-32-bit-signed-int -2147483648)
+(defrecord Tuple [v])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defprotocol Encodable
   (do-encode [this]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def max-32-bit-unsigned-int 4294967295)
+(def max-32-bit-signed-int 2147483647)
+(def min-32-bit-signed-int -2147483648)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,6 +27,8 @@
 (def EIGHT_BYTES #?(:cljs (new js/ArrayBuffer 8)))
 (def EIGHT_BYTE_VIEW #?(:cljs (new js/Uint8Array EIGHT_BYTES)))
 (def EIGHT_BYTES_AS_DOUBLE64 #?(:cljs (new js/Float64Array EIGHT_BYTES)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn int-to-2-bytes [n]
   (aset TWO_BYTES_AS_INT16 0 n)
@@ -56,6 +63,10 @@
   (and (>= n 0)
        (< n 256)))
 
+(defn fits-in-4-bytes-unsigned? [n]
+  (or (>= n 0)
+      (<= n max-32-bit-unsigned-int)))
+
 (defn ^boolean fits-in-4-bytes? [n]
   (or (>= n min-32-bit-signed-int)
       (<= n max-32-bit-signed-int)))
@@ -75,6 +86,8 @@
     (.unshift arr 98)
     arr))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn string-to-byte-vector [exp]
   (crypt/stringToUtf8ByteArray exp))
 
@@ -89,6 +102,8 @@
     (.unshift bytes 109)
 
     bytes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn encode-small-atom-utf8 [bytes length]
   (.unshift bytes length)
@@ -116,11 +131,11 @@
 
     bytes))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn encode-indexed [exp]
-  (let [length-bytes (->> exp
-                          count
-                          int-to-4-bytes)
-        n (count exp)]
+  (let [n (count exp)
+        length-bytes (int-to-4-bytes n)]
 
     (loop [i 0]
       (if (< i n)
@@ -132,6 +147,41 @@
     (.unshift length-bytes 108)
     (.push length-bytes 106)
     length-bytes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn encode-small-tuple [exp]
+  (let [n (count exp)
+        length-bytes (array n)]
+    (loop [i 0]
+      (if (< i n)
+        (do
+          (.apply (.-push length-bytes)
+                  length-bytes (do-encode (nth exp i)))
+          (recur (inc i)))))
+    (.unshift length-bytes 104)
+    length-bytes))
+
+(defn encode-large-tuple [exp]
+  (let [n (count exp)
+        length-bytes (int-to-4-bytes n)]
+    (loop [i 0]
+      (if (< i n)
+        (do
+          (.apply (.-push length-bytes)
+                  length-bytes (do-encode (nth exp i)))
+          (recur (inc i)))))
+    (.unshift length-bytes 105)
+    length-bytes))
+
+(defn encode-tuple [exp]
+  (let [v (.-v exp)]
+    (cond
+      (fits-in-unsigned-byte? (count v))    (encode-small-tuple v)
+      (fits-in-4-bytes-unsigned? (count v)) (encode-large-tuple v)
+      :default (throw (js/Error "Tuple exceeds maximum size of 65535")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn encode-seq [exp]
   (let [length-bytes (->> exp
@@ -145,6 +195,8 @@
     (.unshift length-bytes 108)
     (.push length-bytes 106)
     length-bytes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn encode-map [exp]
   (let [length-bytes (->> exp
@@ -211,6 +263,9 @@
 
   cljs.core/PersistentArrayMap
   (do-encode [this] (encode-map this))
+
+  Tuple
+  (do-encode [this] (encode-tuple this))
 
   default
   (do-encode [this] (throw js/Error "No encoder found for" this)))
