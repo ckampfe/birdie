@@ -14,6 +14,8 @@
 (def TWO_BYTES #?(:cljs (new js/Uint8Array (new js/ArrayBuffer 2))))
 (def TWO_BYTE_DV #?(:cljs (new js/DataView (.-buffer TWO_BYTES))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn signed-int-from-4-bytes [byte-array]
   (aset FOUR_BYTES 0 (aget byte-array 0))
   (aset FOUR_BYTES 1 (aget byte-array 1))
@@ -32,6 +34,8 @@
   (aset TWO_BYTES 0 (aget byte-array 0))
   (aset TWO_BYTES 1 (aget byte-array 1))
   (.getUint16 TWO_BYTE_DV 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn take-bytes! [n state]
   (let [bytes (make-array n)]
