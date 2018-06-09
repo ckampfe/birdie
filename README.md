@@ -42,6 +42,7 @@ Erlang's `tuple` type. See below, as well as the tests for more information.
 | cljs.core/PersistentHashSet  | list                              |
 | cljs.core/PersistentHashMap  | map                               |
 | cljs.core/PersistentArrayMap | map                               |
+| birdie.encode/Tuple          | tuple                             |
 ```
 
 The encode stack implements `birdie.encode.Encodable` for the above types, so you don't have
