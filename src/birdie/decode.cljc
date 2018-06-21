@@ -37,22 +37,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn take-byte! [state]
+  (let [current-position (.-position state)]
+    (set! (.-position state)
+          (inc current-position))
+    (aget (.-bytes state) current-position)))
+
 (defn take-bytes! [n state]
   (let [bytes (make-array n)]
-    (loop [i 0
-           pos (.-position state)]
-      (if (< i n)
-        (do
-          (aset bytes i (nth (.-bytes state) pos))
-          (recur (inc i)
-                 (inc pos)))
-        (do
-          (set! (.-position state) pos)
-          bytes)))))
-
-(defn take-byte! [state]
-  (aget (take-bytes! 1 state)
-        0))
+    (dotimes [i n]
+      (aset bytes i (take-byte! state)))
+    bytes))
 
 (defn add-to-result! [exp state]
   (set! (.-result state) exp)
@@ -259,7 +254,7 @@
 (defrecord State [bytes result position])
 
 (defn make-state [bytes]
-  (State. (vec bytes) [] 0))
+  (State. bytes [] 0))
 
 (defn decode [s]
   (let [state (make-state s)]
