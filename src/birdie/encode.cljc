@@ -202,12 +202,14 @@
   (let [length-bytes (->> exp
                           count
                           int-to-4-bytes)]
-
-    (doseq [[k v] exp]
-      (.apply (.-push length-bytes)
-              length-bytes (do-encode k))
-      (.apply (.-push length-bytes)
-              length-bytes (do-encode v)))
+    (reduce-kv (fn [_acc k v]
+                 (.apply (.-push length-bytes)
+                         length-bytes (do-encode k))
+                 (.apply (.-push length-bytes)
+                         length-bytes (do-encode v))
+                 _acc)
+               :ok
+               exp)
 
     (.unshift length-bytes 116)
     length-bytes))
